@@ -1,3 +1,13 @@
+/************************
+THIS SQL ASSIGNMENT COVERS THE FOLLOWING SECTIONS:
+0 Basics
+1 Names
+2 World
+3 Nobel
+4 SELECT within SELECT
+5 SUM and COUNT
+************************/
+
 /* Find the country that start with Y */
 
 SELECT name FROM world
