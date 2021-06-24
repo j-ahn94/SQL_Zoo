@@ -313,3 +313,356 @@ JOIN actor
 ON actor.id = casting.actorid
 where movie.id in (select movieid from casting join actor on id =actorid where 
 actor.name = 'Art Garfunkel') and actor.name <> 'Art Garfunkel';
+
+
+
+/* List the teachers who have NULL for their department.
+
+Why we cannot use = */
+
+SELECT name FROM teacher
+WHERE dept IS null;
+
+
+
+/* Note the INNER JOIN misses the teachers with no department and the departments with no teacher. */
+
+SELECT teacher.name, dept.name
+ FROM teacher INNER JOIN dept
+           ON (teacher.dept=dept.id);
+
+
+
+/* Use a different JOIN so that all teachers are listed. */
+
+SELECT teacher.name, dept.name
+ FROM teacher LEFT JOIN dept
+           ON (teacher.dept=dept.id);
+
+
+
+/* Use a different JOIN so that all departments are listed. */
+
+SELECT teacher.name, dept.name
+ FROM dept LEFT JOIN teacher
+           ON (teacher.dept=dept.id);
+
+
+
+/* Use COALESCE to print the mobile number. Use the number '07986 444 2266' if there is no number given. 
+Show teacher name and mobile number or '07986 444 2266' */
+
+SELECT name, COALESCE(mobile, '07986 444 2266') FROM teacher;
+
+
+
+/* Use the COALESCE function and a LEFT JOIN to print the teacher name and department name. 
+Use the string 'None' where there is no department. */
+
+SELECT name, COALESCE(mobile, '07986 444 2266') FROM teacher;
+
+
+/* Use the COALESCE function and a LEFT JOIN to print the teacher name and department name. 
+Use the string 'None' where there is no department.*/
+
+SELECT teacher.name, COALESCE(dept.name, 'None') FROM
+	teacher LEFT JOIN dept ON (dept = dept.id);
+
+
+
+/* Use COUNT to show the number of 
+teachers and the number of mobile phones.*/
+
+SELECT COUNT(name), COUNT(mobile) FROM teacher;
+
+
+
+/* Use COUNT and GROUP BY dept.name to show each department and the number of staff. 
+Use a RIGHT JOIN to ensure that the Engineering department is listed.*/
+
+SELECT dept.name, COUNT(teacher.name) FROM teacher
+RIGHT JOIN dept ON teacher.dept = dept.id
+GROUP BY dept.name;
+
+
+
+/* Use CASE to show the name of each teacher followed by 'Sci' 
+if the teacher is in dept 1 or 2 and 'Art' otherwise.*/
+
+SELECT teacher.name,
+CASE 
+WHEN teacher.dept IN (1,2)
+THEN 'Sci'
+Else 'Art'
+END
+From teacher;
+
+
+/* Use CASE to show the name of each teacher followed by 'Sci' if the teacher is in dept 1 or 2, 
+show 'Art' if the teacher's dept is 3 and 'None' otherwise. */
+
+SELECT teacher.name,
+CASE 
+WHEN teacher.dept IN (1,2)
+THEN 'Sci'
+WHEN teacher.dept IN (3)
+THEN 'Art'
+Else 'None'
+END;
+
+
+
+/* The example uses a WHERE clause to show the cases in 'Italy' in March.
+
+Modify the query to show data from Spain */
+
+SELECT name, DAY(whn),
+ confirmed, deaths, recovered
+ FROM covid
+WHERE name = 'Spain'
+AND MONTH(whn) = 3
+ORDER BY whn;
+
+
+
+/* The LAG function is used to show data from the preceding row or the table. 
+
+When lining up rows the data is partitioned by country name and ordered by the data whn. 
+
+That means that only data from Italy is considered.
+
+Modify the query to show confirmed for the day before.
+
+Note on LAG with MySQL. */
+
+
+
+
+/* How many stops are in the database. */
+
+SELECT COUNT(id) FROM stops;
+
+
+
+
+/* Find the id value for the stop 'Craiglockhart' */
+
+SELECT id FROM stops
+WHERE name = 'Craiglockhart';
+
+
+
+
+/* Give the id and the name for the stops on the '4' 'LRT' service. */
+
+SELECT id, name
+FROM stops
+JOIN route
+ON stops.id = route.stop
+WHERE num = '4' AND company = 'LRT';
+
+
+
+
+/* The query shown gives the number of routes that visit either London Road (149) or Craiglockhart (53). 
+Run the query and notice the two services that link these stops have a count of 2. 
+Add a HAVING clause to restrict the output to these two routes.*/
+
+SELECT company, num, COUNT(*)
+FROM route WHERE stop=149 OR stop=53
+GROUP BY company, num
+HAVING COUNT(*) = 2;
+
+
+
+
+/* Execute the self join shown and observe that b.stop gives all the places you can get to from Craiglockhart, without changing routes. 
+Change the query so that it shows the services from Craiglockhart to London Road.*/
+
+SELECT a.company, a.num, a.stop, b.stop
+FROM route a
+JOIN route b ON (a.num = b.num)
+WHERE a.stop = 53
+AND b.stop = 149;
+
+
+
+/* The query shown is similar to the previous one, however by joining two copies of the stops table we can refer to stops by name rather than by number. 
+Change the query so that the services between 'Craiglockhart' and 'London Road' are shown. 
+If you are tired of these places try 'Fairmilehead' against 'Tollcross'*/
+
+SELECT a.company, a.num, stopa.name, stopb.name
+FROM route a JOIN route b ON
+  (a.company=b.company AND a.num=b.num)
+  JOIN stops stopa ON (a.stop=stopa.id)
+  JOIN stops stopb ON (b.stop=stopb.id)
+WHERE stopa.name='Craiglockhart' AND stopb.name='London Road';
+
+
+
+
+/* Give a list of all the services which connect stops 115 and 137 ('Haymarket' and 'Leith') */
+
+SELECT DISTINCT a.company, a.num
+FROM route a
+JOIN route b ON a.num = b.num
+WHERE a.stop = 115 AND b.stop = 137;
+
+
+
+/* Give a list of the services which connect the stops 'Craiglockhart' and 'Tollcross' */
+
+SELECT a.company, a.num
+FROM route a 
+JOIN route b 
+ON a.company = b.company AND a.num = b.num
+JOIN stops stopa ON a.stop = stopa.id
+JOIN stops stopb ON b.stop = stopb.id
+WHERE stopa.name = 'Craiglockhart'
+  AND stopb.name = 'Tollcross';
+
+
+
+/* Give a distinct list of the stops which may be reached from 'Craiglockhart' by taking one bus, including 'Craiglockhart' itself, offered by the LRT company. 
+Include the company and bus no. of the relevant services.*/
+
+SELECT DISTINCT stopb.name, a.company, a.num
+FROM route a 
+JOIN route b 
+ON a.company = b.company AND a.num = b.num
+JOIN stops stopa ON a.stop = stopa.id
+JOIN stops stopb ON b.stop = stopb.id
+WHERE stopa.name = 'Craiglockhart';
+
+
+/* Find the routes involving two buses that can go from Craiglockhart to Lochend.
+Show the bus no. and company for the first bus, the name of the stop for the transfer,
+and the bus no. and company for the second bus.*/
+
+SELECT S.num, S.company, S.name, T.num, T.company 
+FROM 
+    (SELECT DISTINCT a.num, a.company, sb.name 
+     FROM route a JOIN route b ON (a.num = b.num and a.company = b.company) 
+                  JOIN stops sa ON sa.id = a.stop 
+                  JOIN stops sb ON sb.id = b.stop 
+     WHERE sa.name = 'Craiglockhart' AND sb.name <> 'Craiglockhart'
+)S
+
+JOIN
+
+    (SELECT x.num, x.company, sy.name 
+     FROM route x JOIN route y ON (x.num = y.num and x.company = y.company) 
+                  JOIN stops sx ON sx.id = x.stop 
+                  JOIN stops sy ON sy.id = y.stop 
+     WHERE sx.name = 'Lochend' AND sy.name <> 'Lochend'
+    )T
+
+ON (S.name = T.name)
+ORDER BY S.num, S.name, T.num
+
+
+
+
+/* The example uses a WHERE clause to show the cases in 'Italy' in March.
+
+Modify the query to show data from Spain */
+
+SELECT name, DAY(whn),
+ confirmed, deaths, recovered
+ FROM covid
+WHERE name = 'Spain'
+AND MONTH(whn) = 3
+ORDER BY whn;
+
+
+
+/* The LAG function is used to show data from the preceding row or the table. 
+
+When lining up rows the data is partitioned by country name and ordered by the data whn. 
+
+That means that only data from Italy is considered.
+
+Modify the query to show confirmed for the day before.
+
+Note on LAG with MySQL */
+
+SELECT name, DAY(whn), confirmed,
+   LAG(confirmed, 1) OVER (PARTITION BY name ORDER BY whn)
+ FROM covid
+WHERE name = 'Italy'
+AND MONTH(whn) = 3
+ORDER BY whn;
+
+
+/* The number of confirmed case is cumulative - but we can use LAG to recover the number of new cases reported for each day.
+
+Show the number of new cases for each day, for Italy, for March. */
+
+
+
+
+/* The data gathered are necessarily estimates and are inaccurate. 
+
+However by taking a longer time span we can mitigate some of the effects.
+
+You can filter the data to view only Monday's figures WHERE WEEKDAY(whn) = 0.
+
+Show the number of new cases in Italy for each week - show Monday only. */
+
+SELECT tw.name, DATE_FORMAT(tw.whn,'%Y-%m-%d'),tw.confirmed-lw.confirmed
+FROM covid tw LEFT JOIN covid lw ON (
+        DATE_ADD(lw.whn, INTERVAL 1 WEEK) = tw.whn
+        AND tw.name=lw.name )
+WHERE tw.name = 'Italy' AND WEEKDAY(tw.whn)=0
+ORDER BY tw.whn;
+
+
+
+/* You can JOIN a table using DATE arithmetic. This will give different results if data is missing.
+
+Show the number of new cases in Italy for each week - show Monday only.
+
+In the sample query we JOIN this week tw with last week lw using the DATE_ADD function. */
+
+SELECT name, DATE_FORMAT(whn,'%Y-%m-%d'), 
+       confirmed - LAG(confirmed, 1) 
+  OVER (PARTITION BY name ORDER BY whn) newcases
+  FROM covid
+ WHERE name = 'Italy'
+   AND WEEKDAY(whn) = 0
+ ORDER BY whn;
+
+
+
+ /* The query shown shows the number of confirmed cases together with the world ranking for cases.
+
+United States has the highest number, Spain is number 2...
+
+Notice that while Spain has the second highest confirmed cases, Italy has the second highest number of deaths due to the virus.
+
+Include the ranking for the number of deaths in the table. */
+
+SELECT name,confirmed,RANK() OVER (ORDER BY confirmed DESC) rc,
+       deaths,RANK() OVER (ORDER BY deaths DESC)
+FROM covid
+WHERE whn = '2020-04-20'
+ORDER BY confirmed DESC;
+
+
+
+/* The query shown includes a JOIN t the world table so we can access the total population of each country and calculate infection rates (in cases per 100,000).
+
+Show the infect rate ranking for each country. Only include countries with a population of at least 10 million. */
+
+SELECT world.name,
+       ROUND(100000*confirmed/population,0),
+       RANK() OVER (ORDER BY confirmed/population) AS rank
+FROM covid JOIN world ON covid.name=world.name
+WHERE whn = '2020-04-20' AND population > 10000000
+ORDER BY population DESC;
+
+
+
+/* For each country that has had at last 1000 new cases in a single day, show the date of the peak number of new cases. */
+
+
